@@ -199,6 +199,62 @@
     ]},
   ];
 
+  // ---- M5 "What-if" — same as M4, but both combined checks shortened from
+  // 6:50 to 5:00. Every other task keeps its M4 duration; only the schedule
+  // reflows around the shorter bookends (same dependency structure: condenser
+  // leads, evaporator fills the first 5:00 wait, condenser resumes, evaporator
+  // leads to the second 5:00 wait, condenser fills it, evaporator finishes).
+  // Total: 46:20 (2780s) — 3:40 faster than M4's 50:00.
+
+  var m5General = [
+    { section: "Initial Preparation", tasks: [
+      { name: COMBINED_INITIAL, start: 0, dur: 300 },
+    ]},
+    { section: "Post Cleaning", tasks: [
+      { name: COMBINED_FINAL, start: 2480, dur: 300 },
+    ]},
+  ];
+
+  var m5Condenser = [
+    { section: "Pre Cleaning", tasks: [
+      { name: "Remove plastic cover", start: 300, dur: 120 },
+      { name: "Connect the nozzle", start: 420, dur: 60 },
+    ]},
+    { section: "Cleaning Operation", tasks: [
+      { name: "Fill Aircare solution", start: 480, dur: 20 },
+      { name: "Spraying solution", start: 500, dur: 280 },
+      { name: "Wait", start: 780, dur: 300, wait: true },
+      { name: "Rinsing water 1st round", start: 1080, dur: 150 },
+      { name: "Rinsing water 2nd round", start: 1230, dur: 150 },
+      { name: "Blow the air to dry", start: 1740, dur: 180 },
+    ]},
+    { section: "Post Cleaning", tasks: [
+      { name: "Assemble back the cover", start: 1920, dur: 120 },
+    ]},
+  ];
+
+  var m5Evaporator = [
+    { section: "Initial Preparation", tasks: [
+      { name: "Remove glove compartment", start: 780, dur: 210 },
+    ]},
+    { section: "Pre Cleaning", tasks: [
+      { name: "Capture \"Before\" photo", start: 990, dur: 20 },
+      { name: "Install the interior tray", start: 1010, dur: 70 },
+      { name: "Connect the nozzle", start: 1380, dur: 60 },
+    ]},
+    { section: "Cleaning Operation", tasks: [
+      { name: "Fill Aircare solution", start: 1440, dur: 20 },
+      { name: "Spraying solution", start: 1460, dur: 280 },
+      { name: "Wait", start: 1740, dur: 300, wait: true },
+      { name: "Rinsing water", start: 2040, dur: 150 },
+    ]},
+    { section: "Post Cleaning", tasks: [
+      { name: "Remove the tray and equipment", start: 2190, dur: 60 },
+      { name: "Capture \"After\" photo", start: 2250, dur: 20 },
+      { name: "Assemble the blower", start: 2270, dur: 210 },
+    ]},
+  ];
+
   // ---- scenario definitions -------------------------------------------
 
   var EM_WINDOW = 1800; // Toyota's existing EM service window; the auto
@@ -303,6 +359,7 @@
       percentReduction: 0,
       totalTime: 3600,
       conclusion: "Sequential execution requires the full sum of both processes: 60 minutes.",
+      showBigComparison: true,
       rows: {
         condenser: computeSectionBounds(condenserTasks(0)),
         general: null,
@@ -320,6 +377,7 @@
       totalTime: 3000,
       conclusion: "Overlapping evaporator prep with the condenser's passive waiting period — and condenser finishing tasks with the evaporator's — saves 10:00, a 16.67% reduction.",
       highlight: true,
+      showBigComparison: true,
       overlaps: [
         { start: 890, end: 1190, label: "Condenser waits — Evaporator prep begins" },
         { start: 1850, end: 2150, label: "Evaporator waits — Condenser finishing tasks" },
@@ -328,6 +386,28 @@
         condenser: computeSectionBounds(m4Condenser),
         general: computeSectionBounds(m4General),
         evaporator: computeSectionBounds(m4Evaporator),
+      },
+    },
+    {
+      id: "M5",
+      code: "M5",
+      name: "Optimized Manual — Faster Combined Checks",
+      description: "What-if case: identical to the M4 proposal, but both combined initial and final inspection checks are shortened from 6:50 to 5:00 each. Every other task keeps its M4 duration.",
+      addedServiceTime: 2780,
+      timeSaved: 820,
+      percentReduction: 22.78,
+      totalTime: 2780,
+      conclusion: "Shortening both combined checks to 5:00 saves an additional 3:40 beyond the M4 proposal — 13:40 total (22.78%) faster than the current sequential process.",
+      highlight: true,
+      showBigComparison: true,
+      overlaps: [
+        { start: 780, end: 1080, label: "Condenser waits — Evaporator prep begins" },
+        { start: 1740, end: 2040, label: "Evaporator waits — Condenser finishing tasks" },
+      ],
+      rows: {
+        condenser: computeSectionBounds(m5Condenser),
+        general: computeSectionBounds(m5General),
+        evaporator: computeSectionBounds(m5Evaporator),
       },
     },
   ];

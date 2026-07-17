@@ -485,10 +485,16 @@ button {
 .present-exit:hover { background: rgba(255,255,255,.22); }
 
 /* comparison slide specific */
-.compare-cols { display: flex; gap: 40px; flex: 1; }
-.compare-col { flex: 1; display: flex; flex-direction: column; }
+.compare-cols { display: flex; gap: 40px; flex: 1; min-width: 0; }
+.compare-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .compare-col h3 { font-size: 22px; color: var(--navy); margin-bottom: 10px; }
-.compare-col .gantt-chart { transform: scale(1.05); }
+.compare-col .gantt-chart { transform: scale(1.05); transform-origin: top left; }
+/* Column titles already name the scenario, so the per-row labels inside each
+   mini chart can be much narrower than the full-size single-scenario view —
+   this is what actually keeps 5+ columns from overflowing the slide. */
+.compare-col .gantt-row-label,
+.compare-col .gantt-row-label-spacer { width: 90px; }
+.compare-col .gantt-row-label { font-size: 13px; }
 
 .big-comparison.slide-big { padding: 34px 40px; margin-top: 10px; }
 .big-comparison.slide-big .item .value { font-size: 46px; }

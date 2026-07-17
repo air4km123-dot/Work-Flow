@@ -65,11 +65,17 @@
     return wrap;
   }
 
-  function buildStatPills(scenario) {
+  function buildStatPills(scenario, opts) {
+    opts = opts || {};
     var wrap = el("div", "scenario-stats");
     var stats = [["Total Time", fmtClock(scenario.totalTime)], ["Added Service Time", fmtDuration(scenario.addedServiceTime)]];
-    if (scenario.timeSaved !== null && scenario.timeSaved !== undefined) stats.push(["Time Saved", fmtDuration(scenario.timeSaved)]);
-    if (scenario.percentReduction !== null && scenario.percentReduction !== undefined) stats.push(["Reduction", scenario.percentReduction.toFixed(2) + "%"]);
+    // Time Saved / Reduction are skipped here when the big Before→After
+    // banner is shown right below — it already states both, so showing them
+    // twice in the same card/slide is redundant.
+    if (!opts.hideSavings) {
+      if (scenario.timeSaved !== null && scenario.timeSaved !== undefined) stats.push(["Time Saved", fmtDuration(scenario.timeSaved)]);
+      if (scenario.percentReduction !== null && scenario.percentReduction !== undefined) stats.push(["Reduction", scenario.percentReduction.toFixed(2) + "%"]);
+    }
     stats.forEach(function (s) {
       var pill = el("div", "stat-pill");
       pill.appendChild(el("div", "v", s[1]));
@@ -122,10 +128,10 @@
     if (scenario.overlaps && scenario.overlaps.length) overlapHandles.push(handle);
 
     card.appendChild(el("div", "expand-hint", "Double-click any section bar to expand its tasks; double-click again to collapse."));
-    card.appendChild(buildStatPills(scenario));
+    card.appendChild(buildStatPills(scenario, { hideSavings: scenario.showBigComparison }));
 
-    if (scenario.id === "M4") {
-      card.appendChild(buildBigComparison(3600, 3000, 600, 16.67, false));
+    if (scenario.showBigComparison) {
+      card.appendChild(buildBigComparison(3600, scenario.totalTime, scenario.timeSaved, scenario.percentReduction, false));
     }
 
     card.appendChild(el("div", "conclusion-banner", scenario.conclusion));
@@ -161,8 +167,6 @@
     card("30 min", "Manual Evaporator", "evaporator");
     card("60 min", "Current Combined", "navy");
     card("50 min", "Proposed Combined", "overlap");
-    card("10 min", "Time Saved", "overlap");
-    card("16.67%", "Reduction", "overlap");
     return wrap;
   }
 
@@ -183,7 +187,6 @@
     var panel = document.getElementById("panel-manual");
     panel.innerHTML = "";
     panel.appendChild(buildManualSummary());
-    panel.appendChild(buildBigComparison(3600, 3000, 600, 16.67, false));
     var grid = el("div", "scenario-grid");
     APP_DATA.manual.forEach(function (sc) {
       grid.appendChild(buildScenarioCard(sc, CARD_PX_MANUAL, { presentBtn: true, slideIndex: SLIDE_INDEX[sc.id] }));
@@ -248,15 +251,24 @@
     s.appendChild(chartHost);
     var handle = GanttEngine.renderChart(chartHost, scenario, px);
     if (scenario.overlaps && scenario.overlaps.length) overlapHandles.push(handle);
-    s.appendChild(buildStatPills(scenario));
-    if (scenario.id === "M4") s.appendChild(buildBigComparison(3600, 3000, 600, 16.67, true));
+    s.appendChild(buildStatPills(scenario, { hideSavings: scenario.showBigComparison }));
+    if (scenario.showBigComparison) s.appendChild(buildBigComparison(3600, scenario.totalTime, scenario.timeSaved, scenario.percentReduction, true));
     s.appendChild(el("div", "conclusion-banner", scenario.conclusion));
     return s;
   }
 
-  function buildComparisonSlide(title, sub, scenarioList, sharedMax, colWidth) {
+  // Fits N mini-charts across a 1920px slide (1780px inner content width,
+  // 40px gaps, a 90px narrowed row-label per column, plus safety margin for
+  // the .compare-col chart's 1.05 hover-scale) without overflowing/clipping.
+  function comparisonColWidth(n) {
+    var GAP = 40, LABEL_AND_MARGIN = 110;
+    return Math.max(120, (1780 - (n - 1) * GAP) / n - LABEL_AND_MARGIN);
+  }
+
+  function buildComparisonSlide(title, sub, scenarioList, sharedMax) {
     var s = slideShell("Comparison", title, sub);
     var cols = el("div", "compare-cols");
+    var colWidth = comparisonColWidth(scenarioList.length);
     scenarioList.forEach(function (sc) {
       var px = colWidth / sharedMax;
       var col = el("div", "compare-col");
@@ -277,7 +289,7 @@
     var s = slideShell("Manual Workflow", "Current vs Proposed Manual Workflow", "Rearranging manual evaporator and condenser cleaning to overlap with waiting and machine-running periods.");
     var cols = el("div", "compare-cols");
     [m3, m4].forEach(function (sc) {
-      var px = 780 / MANUAL_MAX;
+      var px = comparisonColWidth(2) / MANUAL_MAX;
       var col = el("div", "compare-col");
       col.appendChild(el("h3", null, sc.code + " — " + sc.name));
       var chartHost = el("div");
@@ -289,6 +301,28 @@
     });
     s.appendChild(cols);
     s.appendChild(buildBigComparison(3600, 3000, 600, 16.67, true));
+    return s;
+  }
+
+  function buildFurtherOptimizationSlide() {
+    var m4 = APP_DATA.manual[3], m5 = APP_DATA.manual[4];
+    var s = slideShell("Manual Workflow — What-If", "M4 vs M5 — Can It Go Faster?", "What-if case: shortening both combined inspection checks from 6:50 to 5:00 each, with every other task unchanged.");
+    var cols = el("div", "compare-cols");
+    [m4, m5].forEach(function (sc) {
+      var px = comparisonColWidth(2) / MANUAL_MAX;
+      var col = el("div", "compare-col");
+      col.appendChild(el("h3", null, sc.code + " — " + sc.name));
+      var chartHost = el("div");
+      col.appendChild(chartHost);
+      var handle = GanttEngine.renderChart(chartHost, sc, px);
+      if (sc.overlaps && sc.overlaps.length) overlapHandles.push(handle);
+      col.appendChild(buildStatPills(sc));
+      cols.appendChild(col);
+    });
+    s.appendChild(cols);
+    var savedVsM4 = m4.totalTime - m5.totalTime;
+    var pctVsM4 = (savedVsM4 / m4.totalTime) * 100;
+    s.appendChild(buildBigComparison(m4.totalTime, m5.totalTime, savedVsM4, pctVsM4, true));
     return s;
   }
 
@@ -319,15 +353,16 @@
       SLIDE_INDEX[sc.id] = slides.length;
       slides.push(buildScenarioSlide(sc, SLIDE_PX_AUTO, "Auto Machine Countries"));
     });
-    slides.push(buildComparisonSlide("Auto Scenario Comparison", "Comparing added service time across auto machine cleaning strategies.", APP_DATA.auto, AUTO_MAX, 560));
+    slides.push(buildComparisonSlide("Auto Scenario Comparison", "Comparing added service time across auto machine cleaning strategies.", APP_DATA.auto, AUTO_MAX));
 
     APP_DATA.manual.forEach(function (sc) {
       SLIDE_INDEX[sc.id] = slides.length;
       slides.push(buildScenarioSlide(sc, SLIDE_PX_MANUAL, "Manual Machine Countries"));
     });
-    slides.push(buildComparisonSlide("Manual Scenario Comparison", "Comparing total cleaning time across manual machine cleaning strategies.", APP_DATA.manual, MANUAL_MAX, 420));
+    slides.push(buildComparisonSlide("Manual Scenario Comparison", "Comparing total cleaning time across manual machine cleaning strategies.", APP_DATA.manual, MANUAL_MAX));
 
     slides.push(buildCurrentVsProposedSlide());
+    slides.push(buildFurtherOptimizationSlide());
     slides.push(buildTimeSavingSummarySlide());
   }
 
