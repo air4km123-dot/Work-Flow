@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Condenser &amp; Evaporator Cleaning Workflow Comparison</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-title">
+    <h1>Cleaning Workflow Optimization</h1>
+    <span>Condenser &amp; Evaporator Cleaning — Auto vs Manual Machine Countries</span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="auto">Auto Machine Countries</button>
+    <button class="tab-btn" data-tab="manual">Manual Machine Countries</button>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn btn-primary" id="btn-present">&#9654; Presentation Mode</button>
+    <div class="dropdown" id="export-dropdown">
+      <button class="btn" id="btn-export">Export &#9662;</button>
+      <div class="dropdown-menu">
+        <button id="export-current">Export Current Slide (PNG)</button>
+        <button id="export-all">Download All Slides (PNG)</button>
+        <button id="export-pdf">Export as PDF</button>
+        <button id="export-print">Print (16:9 Landscape)</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="app-main">
+  <div class="tab-panel active" id="panel-auto"></div>
+  <div class="tab-panel" id="panel-manual"></div>
+</main>
+
+<div class="present-overlay" id="present-overlay">
+  <button class="present-exit" id="present-exit">Exit &#10005;</button>
+  <div class="slide-wrapper" id="slide-wrapper">
+    <div class="slide-viewport" id="slide-viewport"></div>
+  </div>
+  <div class="present-controls">
+    <button id="present-prev">&#8249; Prev</button>
+    <span class="present-counter" id="present-counter">1 / 1</span>
+    <button id="present-next">Next &#8250;</button>
+  </div>
+</div>
+
+<div id="export-stage"></div>
+
+<script src="js/data.js"></script>
+<script src="js/gantt.js"></script>
+<script src="js/export.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
