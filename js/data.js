@@ -75,7 +75,7 @@
         { name: "Blow the air to dry", start: offset + 1290, dur: 180 },
       ]},
       { section: "Post Cleaning", tasks: [
-        { name: "Assemble back the cover", start: offset + 1470, dur: 120 },
+        { name: "Remove the tray and Assemble back the cover", start: offset + 1470, dur: 120 },
         { name: "Measure A/C low/high pressure and final car inspection", start: offset + 1590, dur: 210 },
       ]},
     ];
@@ -173,7 +173,7 @@
       { name: "Blow the air to dry", start: 1850, dur: 180 },
     ]},
     { section: "Post Cleaning", tasks: [
-      { name: "Assemble back the cover", start: 2030, dur: 120 },
+      { name: "Remove the tray and Assemble back the cover", start: 2030, dur: 120 },
     ]},
   ];
 
@@ -229,7 +229,7 @@
       { name: "Blow the air to dry", start: 1700, dur: 180 },
     ]},
     { section: "Post Cleaning", tasks: [
-      { name: "Assemble back the cover", start: 1880, dur: 120 },
+      { name: "Remove the tray and Assemble back the cover", start: 1880, dur: 120 },
     ]},
   ];
 
