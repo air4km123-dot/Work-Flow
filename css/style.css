@@ -12,6 +12,8 @@
   --evaporator-bg: #dfeaf7;
   --overlap: #8a4fc9;
   --waiting: #e0a924;
+  --manual-badge: #7c3aed;
+  --auto-badge: #a16207;
   --bg: #ffffff;
   --panel: #f6f8fa;
   --text: #17233a;
@@ -215,6 +217,21 @@ button {
 }
 .scenario-name { font-size: 17px; font-weight: 700; color: var(--navy); }
 .scenario-desc { font-size: 12.5px; color: var(--muted); max-width: 640px; margin-top: 4px; line-height: 1.45; }
+
+/* Manual/Auto/Condenser/Evaporator call-outs wherever a scenario name is
+   shown as a title (scenario card, slide title, comparison column header).
+   Sized in em so the badge scales with whichever heading it's inside. */
+.word-badge {
+  display: inline-block;
+  color: #fff;
+  font-weight: 800;
+  padding: 0.05em 0.35em;
+  border-radius: 0.3em;
+}
+.word-badge-manual { background: var(--manual-badge); }
+.word-badge-auto { background: var(--auto-badge); }
+.word-color-condenser { color: var(--condenser); }
+.word-color-evaporator { color: var(--evaporator); }
 
 .scenario-stats { display: flex; gap: 10px; flex-wrap: wrap; }
 .stat-pill {

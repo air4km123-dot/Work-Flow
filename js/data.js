@@ -132,7 +132,7 @@
     return Math.max.apply(null, row.map(function (s) { return s.end; }));
   }
 
-  // ---- M4 "4 ร้อนเย็นแบบ kaizen" — real interleaved schedule ----------------
+  // ---- M4 "4 ร้อนเย็นแบบ kaizen" — real interleaved schedule, reflowed -----
   // The SOP splits the initial car inspection and the final inspection into
   // single combined steps covering both coils — shown once, in the General
   // Tasks row (matching the source's own "Initial Preparation"/"Post cleaning"
@@ -140,10 +140,10 @@
   // Two explicit "Wait" dwell periods let the technician work the other coil
   // in parallel: condenser waits while evaporator preps, then evaporator waits
   // while condenser finishes. Same task order/structure as the source SOP,
-  // reflowed with the revised per-task durations — both Wait windows now run
-  // with zero slack (the revised "Blow the air to dry" and "Install the
-  // interior tray" durations exactly fill what used to be idle time inside
-  // each 5:00 wait). Total: 50:00 (3000s).
+  // reflowed for revised per-task durations (both combined checks shortened
+  // to 4:20, "Blow the air to dry" and "Install the interior tray" widened to
+  // exactly fill what used to be idle time inside each 5:00 wait — so both
+  // Wait windows now run with zero slack). Total: 45:00 (2700s).
 
   var COMBINED_INITIAL = "Measure A/C low/high pressure, Inspect condenser condition — Combined Check";
   var COMBINED_FINAL = "Final A/C and car inspection — Combined Check";
@@ -152,62 +152,6 @@
   // the General Tasks row (not duplicated into the condenser/evaporator rows).
   var m4General = [
     { section: "Initial Preparation", tasks: [
-      { name: COMBINED_INITIAL, start: 0, dur: 410 },
-    ]},
-    { section: "Post Cleaning", tasks: [
-      { name: COMBINED_FINAL, start: 2590, dur: 410 },
-    ]},
-  ];
-
-  var m4Condenser = [
-    { section: "Pre Cleaning", tasks: [
-      { name: "Remove plastic cover", start: 410, dur: 120 },
-      { name: "Connect the nozzle", start: 530, dur: 60 },
-    ]},
-    { section: "Cleaning Operation", tasks: [
-      { name: "Fill Aircare solution", start: 590, dur: 20 },
-      { name: "Spraying solution", start: 610, dur: 280 },
-      { name: "Wait", start: 890, dur: 300, wait: true },
-      { name: "Rinsing water 1st round", start: 1190, dur: 150 },
-      { name: "Rinsing water 2nd round", start: 1340, dur: 150 },
-      { name: "Blow the air to dry", start: 1850, dur: 180 },
-    ]},
-    { section: "Post Cleaning", tasks: [
-      { name: "Remove the tray and Assemble back the cover", start: 2030, dur: 120 },
-    ]},
-  ];
-
-  var m4Evaporator = [
-    { section: "Initial Preparation", tasks: [
-      { name: "Remove glove compartment", start: 890, dur: 210 },
-    ]},
-    { section: "Pre Cleaning", tasks: [
-      { name: "Capture \"Before\" photo", start: 1100, dur: 20 },
-      { name: "Install the interior tray", start: 1120, dur: 70 },
-      { name: "Connect the nozzle", start: 1490, dur: 60 },
-    ]},
-    { section: "Cleaning Operation", tasks: [
-      { name: "Fill Aircare solution", start: 1550, dur: 20 },
-      { name: "Spraying solution", start: 1570, dur: 280 },
-      { name: "Wait", start: 1850, dur: 300, wait: true },
-      { name: "Rinsing water", start: 2150, dur: 150 },
-    ]},
-    { section: "Post Cleaning", tasks: [
-      { name: "Remove the tray and equipment", start: 2300, dur: 60 },
-      { name: "Capture \"After\" photo", start: 2360, dur: 20 },
-      { name: "Assemble the blower", start: 2380, dur: 210 },
-    ]},
-  ];
-
-  // ---- M5 "What-if" — same as M4, but both combined checks shortened from
-  // 6:50 to 4:20. Every other task keeps its M4 duration; only the schedule
-  // reflows around the shorter bookends (same dependency structure: condenser
-  // leads, evaporator fills the first 5:00 wait, condenser resumes, evaporator
-  // leads to the second 5:00 wait, condenser fills it, evaporator finishes).
-  // Total: 45:00 (2700s) — 5:00 faster than M4's 50:00.
-
-  var m5General = [
-    { section: "Initial Preparation", tasks: [
       { name: COMBINED_INITIAL, start: 0, dur: 260 },
     ]},
     { section: "Post Cleaning", tasks: [
@@ -215,7 +159,7 @@
     ]},
   ];
 
-  var m5Condenser = [
+  var m4Condenser = [
     { section: "Pre Cleaning", tasks: [
       { name: "Remove plastic cover", start: 260, dur: 120 },
       { name: "Connect the nozzle", start: 380, dur: 60 },
@@ -233,7 +177,7 @@
     ]},
   ];
 
-  var m5Evaporator = [
+  var m4Evaporator = [
     { section: "Initial Preparation", tasks: [
       { name: "Remove glove compartment", start: 740, dur: 210 },
     ]},
@@ -320,22 +264,6 @@
     {
       id: "M1",
       code: "M1",
-      name: "Manual Condenser Only",
-      description: "Manual condenser cleaning performed as a standalone process.",
-      addedServiceTime: 1800,
-      timeSaved: null,
-      percentReduction: null,
-      totalTime: 1800,
-      conclusion: "Standalone manual condenser cleaning requires 30 minutes.",
-      rows: {
-        condenser: computeSectionBounds(condenserTasks(0)),
-        general: null,
-        evaporator: null,
-      },
-    },
-    {
-      id: "M2",
-      code: "M2",
       name: "Manual Evaporator Only",
       description: "Manual evaporator cleaning performed as a standalone process.",
       addedServiceTime: 1800,
@@ -350,9 +278,25 @@
       },
     },
     {
+      id: "M2",
+      code: "M2",
+      name: "Manual Condenser Only",
+      description: "Manual condenser cleaning performed as a standalone process.",
+      addedServiceTime: 1800,
+      timeSaved: null,
+      percentReduction: null,
+      totalTime: 1800,
+      conclusion: "Standalone manual condenser cleaning requires 30 minutes.",
+      rows: {
+        condenser: computeSectionBounds(condenserTasks(0)),
+        general: null,
+        evaporator: null,
+      },
+    },
+    {
       id: "M3",
       code: "M3",
-      name: "Current Sequential Manual",
+      name: "Current Manual Condenser + Manual Evaporator",
       description: "Manual condenser cleaning and manual evaporator cleaning are performed back-to-back, one fully after the other.",
       addedServiceTime: 3600,
       timeSaved: 0,
@@ -369,35 +313,13 @@
     {
       id: "M4",
       code: "M4",
-      name: "Proposed Optimized Manual",
-      description: "Manual evaporator and condenser workflows are rearranged so evaporator preparation begins during the condenser's waiting / passive dwell period, and condenser finishing tasks run during the evaporator's dwell period.",
-      addedServiceTime: 3000,
-      timeSaved: 600,
-      percentReduction: 16.67,
-      totalTime: 3000,
-      conclusion: "Overlapping evaporator prep with the condenser's passive waiting period — and condenser finishing tasks with the evaporator's — saves 10:00, a 16.67% reduction.",
-      highlight: true,
-      showBigComparison: true,
-      overlaps: [
-        { start: 890, end: 1190, label: "Condenser waits — Evaporator prep begins" },
-        { start: 1850, end: 2150, label: "Evaporator waits — Condenser finishing tasks" },
-      ],
-      rows: {
-        condenser: computeSectionBounds(m4Condenser),
-        general: computeSectionBounds(m4General),
-        evaporator: computeSectionBounds(m4Evaporator),
-      },
-    },
-    {
-      id: "M5",
-      code: "M5",
-      name: "Optimized Kaizen SOP",
-      description: "What-if case: identical to the M4 proposal, but both combined initial and final inspection checks are shortened from 6:50 to 4:20 each. Every other task keeps its M4 duration.",
+      name: "Kaizen Manual Condenser + Manual Evaporator",
+      description: "Manual evaporator and condenser workflows are rearranged so evaporator preparation begins during the condenser's waiting / passive dwell period, and condenser finishing tasks run during the evaporator's dwell period, with both combined inspection checks shortened to 4:20 each.",
       addedServiceTime: 2700,
       timeSaved: 900,
       percentReduction: 25,
       totalTime: 2700,
-      conclusion: "Shortening both combined checks to 4:20 saves an additional 5:00 beyond the M4 proposal — 15:00 total (25.00%) faster than the current sequential process.",
+      conclusion: "Overlapping evaporator prep with the condenser's passive waiting period — condenser finishing tasks with the evaporator's — and shortening both combined checks to 4:20 saves 15:00, a 25.00% reduction.",
       highlight: true,
       showBigComparison: true,
       overlaps: [
@@ -405,9 +327,9 @@
         { start: 1700, end: 2000, label: "Evaporator waits — Condenser finishing tasks" },
       ],
       rows: {
-        condenser: computeSectionBounds(m5Condenser),
-        general: computeSectionBounds(m5General),
-        evaporator: computeSectionBounds(m5Evaporator),
+        condenser: computeSectionBounds(m4Condenser),
+        general: computeSectionBounds(m4General),
+        evaporator: computeSectionBounds(m4Evaporator),
       },
     },
   ];

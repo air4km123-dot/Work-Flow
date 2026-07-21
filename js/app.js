@@ -38,6 +38,14 @@
   var SLIDE_PX_AUTO = SLIDE_PLOT_WIDTH / AUTO_MAX;
   var SLIDE_PX_MANUAL = SLIDE_PLOT_WIDTH / MANUAL_MAX;
 
+  // The final scenario in the Manual tab is always "the" current proposed
+  // workflow — referenced by position rather than a hardcoded id/index so
+  // adding, removing, or reordering manual scenarios can't leave summary
+  // numbers elsewhere on the page stale.
+  function proposedManualScenario() {
+    return APP_DATA.manual[APP_DATA.manual.length - 1];
+  }
+
   // ---- shared building blocks ---------------------------------------------
 
   function el(tag, cls, html) {
@@ -45,6 +53,17 @@
     if (cls) e.className = cls;
     if (html !== undefined) e.innerHTML = html;
     return e;
+  }
+
+  // Highlights the words Manual/Auto (filled badge, white text) and
+  // Condenser/Evaporator (colored text) wherever they appear in a scenario
+  // name — used everywhere a scenario name is rendered as a title.
+  function styledScenarioName(text) {
+    return text
+      .replace(/\bManual\b/g, '<span class="word-badge word-badge-manual">Manual</span>')
+      .replace(/\bAuto\b/g, '<span class="word-badge word-badge-auto">Auto</span>')
+      .replace(/\bCondenser\b/g, '<span class="word-color word-color-condenser">Condenser</span>')
+      .replace(/\bEvaporator\b/g, '<span class="word-color word-color-evaporator">Evaporator</span>');
   }
 
   function buildLegend() {
@@ -108,7 +127,7 @@
     var head = el("div", "scenario-head");
     var left = el("div");
     left.appendChild(el("div", "scenario-code", scenario.code));
-    left.appendChild(el("div", "scenario-name", scenario.name));
+    left.appendChild(el("div", "scenario-name", styledScenarioName(scenario.name)));
     left.appendChild(el("div", "scenario-desc", scenario.description));
     head.appendChild(left);
     if (opts.presentBtn) {
@@ -166,7 +185,7 @@
     card("30 min", "Manual Condenser", "condenser");
     card("30 min", "Manual Evaporator", "evaporator");
     card("60 min", "Current Combined", "navy");
-    card("50 min", "Proposed Combined", "overlap");
+    card(fmtDuration(proposedManualScenario().totalTime), "Proposed Combined", "overlap");
     return wrap;
   }
 
@@ -237,15 +256,16 @@
       d.appendChild(el("div", "label", l));
       return d;
     }
+    var proposed = proposedManualScenario();
     row.appendChild(item("0 min", "Auto Evaporator — Added Time"));
-    row.appendChild(item("16.67%", "Manual Workflow Reduction"));
-    row.appendChild(item("10:00", "Manual Time Saved"));
+    row.appendChild(item(proposed.percentReduction.toFixed(2) + "%", "Manual Workflow Reduction"));
+    row.appendChild(item(fmtClock(proposed.timeSaved), "Manual Time Saved"));
     s.appendChild(row);
     return s;
   }
 
   function buildScenarioSlide(scenario, px, tabLabel) {
-    var s = slideShell(tabLabel, scenario.code + " — " + scenario.name, scenario.description);
+    var s = slideShell(tabLabel, scenario.code + " — " + styledScenarioName(scenario.name), scenario.description);
     s.appendChild(buildLegend());
     var chartHost = el("div");
     s.appendChild(chartHost);
@@ -272,7 +292,7 @@
     scenarioList.forEach(function (sc) {
       var px = colWidth / sharedMax;
       var col = el("div", "compare-col");
-      col.appendChild(el("h3", null, sc.code + " — " + sc.name));
+      col.appendChild(el("h3", null, sc.code + " — " + styledScenarioName(sc.name)));
       var chartHost = el("div");
       col.appendChild(chartHost);
       var handle = GanttEngine.renderChart(chartHost, sc, px);
@@ -285,13 +305,14 @@
   }
 
   function buildCurrentVsProposedSlide() {
-    var m3 = APP_DATA.manual[2], m4 = APP_DATA.manual[3];
+    var m3 = APP_DATA.manual.filter(function (s) { return s.id === "M3"; })[0];
+    var proposed = proposedManualScenario();
     var s = slideShell("Manual Workflow", "Current vs Proposed Manual Workflow", "Rearranging manual evaporator and condenser cleaning to overlap with waiting and machine-running periods.");
     var cols = el("div", "compare-cols");
-    [m3, m4].forEach(function (sc) {
+    [m3, proposed].forEach(function (sc) {
       var px = comparisonColWidth(2) / MANUAL_MAX;
       var col = el("div", "compare-col");
-      col.appendChild(el("h3", null, sc.code + " — " + sc.name));
+      col.appendChild(el("h3", null, sc.code + " — " + styledScenarioName(sc.name)));
       var chartHost = el("div");
       col.appendChild(chartHost);
       var handle = GanttEngine.renderChart(chartHost, sc, px);
@@ -300,35 +321,14 @@
       cols.appendChild(col);
     });
     s.appendChild(cols);
-    s.appendChild(buildBigComparison(3600, 3000, 600, 16.67, true));
-    return s;
-  }
-
-  function buildFurtherOptimizationSlide() {
-    var m4 = APP_DATA.manual[3], m5 = APP_DATA.manual[4];
-    var s = slideShell("Manual Workflow — What-If", "M4 vs M5 — Can It Go Faster?", "What-if case: shortening both combined inspection checks from 6:50 to 5:00 each, with every other task unchanged.");
-    var cols = el("div", "compare-cols");
-    [m4, m5].forEach(function (sc) {
-      var px = comparisonColWidth(2) / MANUAL_MAX;
-      var col = el("div", "compare-col");
-      col.appendChild(el("h3", null, sc.code + " — " + sc.name));
-      var chartHost = el("div");
-      col.appendChild(chartHost);
-      var handle = GanttEngine.renderChart(chartHost, sc, px);
-      if (sc.overlaps && sc.overlaps.length) overlapHandles.push(handle);
-      col.appendChild(buildStatPills(sc));
-      cols.appendChild(col);
-    });
-    s.appendChild(cols);
-    var savedVsM4 = m4.totalTime - m5.totalTime;
-    var pctVsM4 = (savedVsM4 / m4.totalTime) * 100;
-    s.appendChild(buildBigComparison(m4.totalTime, m5.totalTime, savedVsM4, pctVsM4, true));
+    s.appendChild(buildBigComparison(m3.totalTime, proposed.totalTime, proposed.timeSaved, proposed.percentReduction, true));
     return s;
   }
 
   function buildTimeSavingSummarySlide() {
+    var proposed = proposedManualScenario();
     var s = slideShell("Executive Summary", "Time-Saving Summary", "Combined impact of proposed workflow changes across Auto and Manual machine countries.");
-    s.appendChild(buildBigComparison(3600, 3000, 600, 16.67, true));
+    s.appendChild(buildBigComparison(3600, proposed.totalTime, proposed.timeSaved, proposed.percentReduction, true));
     var grid = el("div", "summary-dashboard");
     function card(value, label, accent) {
       var c = el("div", "summary-card accent-" + accent);
@@ -339,9 +339,9 @@
     card("0 min", "Auto Evaporator within EM — Added", "evaporator");
     card("30 min", "Auto/Manual Condenser Only — Added", "condenser");
     card("60 min", "Manual Current Combined", "navy");
-    card("50 min", "Manual Proposed Combined", "overlap");
+    card(fmtDuration(proposed.totalTime), "Manual Proposed Combined", "overlap");
     s.appendChild(grid);
-    s.appendChild(el("div", "conclusion-banner", "Auto evaporator cleaning adds zero service time by running inside the existing EM window. The proposed manual workflow saves 10 minutes (16.67%) by overlapping evaporator preparation with the condenser's waiting and machine-running periods."));
+    s.appendChild(el("div", "conclusion-banner", "Auto evaporator cleaning adds zero service time by running inside the existing EM window. The proposed manual workflow saves " + fmtDuration(proposed.timeSaved) + " (" + proposed.percentReduction.toFixed(2) + "%) by overlapping evaporator preparation with the condenser's waiting and machine-running periods."));
     return s;
   }
 
@@ -362,7 +362,6 @@
     slides.push(buildComparisonSlide("Manual Scenario Comparison", "Comparing total cleaning time across manual machine cleaning strategies.", APP_DATA.manual, MANUAL_MAX));
 
     slides.push(buildCurrentVsProposedSlide());
-    slides.push(buildFurtherOptimizationSlide());
     slides.push(buildTimeSavingSummarySlide());
   }
 
